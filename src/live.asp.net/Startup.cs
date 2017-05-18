@@ -4,6 +4,7 @@
 using System;
 using System.Security.Claims;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -11,7 +12,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Rewrite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using live.asp.net.Formatters;
@@ -21,30 +21,32 @@ namespace live.asp.net
 {
     public class Startup
     {
-        public Startup(IHostingEnvironment env)
+        public Startup(IConfiguration configuration)
         {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.cs.json")
-                .AddJsonFile($"appsettings.cs.{env.EnvironmentName}.json", optional: true);
-
-            if (env.IsDevelopment())
-            {
-                builder.AddUserSecrets<Startup>();
-            }
-
-            builder.AddEnvironmentVariables();
-
-            Configuration = builder.Build();
+            Configuration = configuration;
         }
 
-        public IConfigurationRoot Configuration { get; set; }
+        public IConfiguration Configuration { get; set; }
 
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
 
-            services.AddAuthentication(options => options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme);
+            services.AddAuthentication(sharedOptions =>
+            {
+                sharedOptions.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                sharedOptions.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                sharedOptions.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+            });
+            services.AddOpenIdConnectAuthentication(options =>
+            {
+                options.ClientId = Configuration["Authentication:AzureAd:ClientId"];
+                options.Authority = Configuration["Authentication:AzureAd:AADInstance"] + Configuration["Authentication:AzureAd:TenantId"];
+                options.ResponseType = OpenIdConnectResponseType.IdToken;
+                options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            });
+            services.AddCookieAuthentication();
+
             services.AddAuthorization(options =>
                 options.AddPolicy("Admin", policyBuilder =>
                     policyBuilder.RequireClaim(
@@ -73,23 +75,15 @@ namespace live.asp.net
             }
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            // If we're behind IIS don't bother logging to the console as the same data is easily
-            // available in the Visual Studio Application Insights search window
-            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_TOKEN")))
-            {
-                loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            }
-
             if (env.IsDevelopment())
             {
-                loggerFactory.AddDebug();
                 app.UseDeveloperExceptionPage();
             }
             else
             {
-                loggerFactory.AddApplicationInsights(app.ApplicationServices, LogLevel.Warning);
+                //loggerFactory.AddApplicationInsights(app.ApplicationServices, LogLevel.Warning);
                 app.UseExceptionHandler("/error");
             }
 
@@ -102,20 +96,7 @@ namespace live.asp.net
 
             app.UseStaticFiles();
 
-            app.UseCookieAuthentication(new CookieAuthenticationOptions
-            {
-                AutomaticAuthenticate = true
-            });
-
-            app.UseOpenIdConnectAuthentication(new OpenIdConnectOptions
-            {
-                AutomaticAuthenticate = true,
-                AutomaticChallenge = true,
-                ClientId = Configuration["Authentication:AzureAd:ClientId"],
-                Authority = Configuration["Authentication:AzureAd:AADInstance"] + Configuration["Authentication:AzureAd:TenantId"],
-                ResponseType = OpenIdConnectResponseType.IdToken,
-                SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme
-            });
+            app.UseAuthentication();
 
             app.Use((context, next) => context.Request.Path.StartsWithSegments("/ping")
                 ? context.Response.WriteAsync("pong")

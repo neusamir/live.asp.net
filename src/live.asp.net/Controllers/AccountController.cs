@@ -2,9 +2,9 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.AspNetCore.Http.Authentication;
 using Microsoft.AspNetCore.Mvc;
 
 namespace live.asp.net.Controllers
@@ -14,10 +14,8 @@ namespace live.asp.net.Controllers
         [HttpGet("signin")]
         public IActionResult SignIn()
         {
-            return new ChallengeResult(
-                OpenIdConnectDefaults.AuthenticationScheme,
-                new AuthenticationProperties { RedirectUri = "/" }
-            );
+            return Challenge(
+                new AuthenticationProperties { RedirectUri = "/" }, OpenIdConnectDefaults.AuthenticationScheme);
         }
 
         [HttpGet("signout")]
