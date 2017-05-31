@@ -32,7 +32,7 @@
             <div class="row">
                 <div class="col-md-6">
                     <p>
-                        &copy; 2015 Microsoft. All rights reserved.
+                        &copy; 2017 Microsoft. All rights reserved.
                     </p>
                 </div>
             </div>
@@ -61,8 +61,9 @@
 </html>
 <!-- IsHttps: @Context.Request.IsHttps -->
 <!-- Host: @Context.Request.Host.Host -->
+<!-- ViewPath: @ViewContext.View.Path -->
+<!-- ViewAssembly: @GetType().Assembly.FullName -->
 <cache>
-<!-- ViewType: @GetType().AssemblyQualifiedName -->
 <!-- Environment: @HostingEnvironment.EnvironmentName -->
 <!-- Application: @Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationName, @Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion -->
 <!-- Deployment: @DeploymentEnvironment.DeploymentId -->

@@ -19,24 +19,11 @@ namespace live.asp.net.Controllers
         }
 
         [HttpGet("signout")]
-        public async Task<IActionResult> SignOut()
+        public IActionResult SignOut()
         {
-            var callbackUrl = Url.Action("SignOutCallback", "Account", values: null, protocol: Request.Scheme);
-            await HttpContext.Authentication.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            await HttpContext.Authentication.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
-            return new EmptyResult();
-        }
-
-        [HttpGet("signoutcallback")]
-        public IActionResult SignOutCallback()
-        {
-            if (HttpContext.User.Identity.IsAuthenticated)
-            {
-                // Redirect to home page if the user is authenticated.
-                return RedirectToAction(nameof(HomeController.Index), "Home");
-            }
-
-            return View();
+            var callbackUrl = Url.Page("/SignedOut", pageHandler: null, values: null, protocol: Request.Scheme);
+            return SignOut(new AuthenticationProperties { RedirectUri = callbackUrl },
+                CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme);
         }
     }
 }

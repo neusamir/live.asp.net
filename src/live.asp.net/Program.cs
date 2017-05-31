@@ -10,13 +10,13 @@ namespace live.asp.net
     {
         public static void Main(string[] args)
         {
-            var host = WebHost.CreateDefaultBuilder()
+            BuildWebHost(args).Run();
+        }
+
+        public static IWebHost BuildWebHost(string[] args) =>
+            WebHost.CreateDefaultBuilder(args)
                 .UseApplicationInsights()
-                .UseAzureAppServices()
                 .UseStartup<Startup>()
                 .Build();
-
-            host.Run();
-        }
     }
 }
