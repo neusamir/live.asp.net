@@ -16,6 +16,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using live.asp.net.Formatters;
 using live.asp.net.Services;
+using Microsoft.Extensions.Logging;
 
 namespace live.asp.net
 {
@@ -32,11 +33,11 @@ namespace live.asp.net
         {
             services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
 
-            services.AddAuthentication(sharedOptions =>
+            services.AddAuthentication(options =>
             {
-                sharedOptions.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                sharedOptions.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                sharedOptions.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
             });
             services.AddOpenIdConnectAuthentication(options =>
             {
@@ -75,7 +76,7 @@ namespace live.asp.net
             }
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             if (env.IsDevelopment())
             {
@@ -83,7 +84,7 @@ namespace live.asp.net
             }
             else
             {
-                //loggerFactory.AddApplicationInsights(app.ApplicationServices, LogLevel.Warning);
+                loggerFactory.AddApplicationInsights(app.ApplicationServices);
                 app.UseExceptionHandler("/error");
             }
 
