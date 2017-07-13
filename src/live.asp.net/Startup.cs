@@ -12,11 +12,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Rewrite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using live.asp.net.Formatters;
 using live.asp.net.Services;
-using Microsoft.Extensions.Logging;
 
 namespace live.asp.net
 {
@@ -84,7 +84,7 @@ namespace live.asp.net
             }
             else
             {
-                loggerFactory.AddApplicationInsights(app.ApplicationServices);
+                loggerFactory.AddApplicationInsights(app.ApplicationServices, LogLevel.Information);
                 app.UseExceptionHandler("/error");
             }
 

@@ -1,16 +1,15 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
-using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using live.asp.net.Models;
 using live.asp.net.Services;
-using Microsoft.ApplicationInsights.DataContracts;
 
 namespace live.asp.net.Pages.Admin
 {
@@ -20,8 +19,8 @@ namespace live.asp.net.Pages.Admin
         private readonly IMemoryCache _memoryCache;
         private readonly AppSettings _appSettings;
         private readonly IHostingEnvironment _env;
-        private readonly TelemetryClient _telemetry;
         private readonly IObjectMapper _mapper;
+        private readonly ILogger _logger;
 
         public IndexModel(
             IHostingEnvironment env,
@@ -29,14 +28,14 @@ namespace live.asp.net.Pages.Admin
             IMemoryCache memoryCache,
             IOptions<AppSettings> appSettings,
             IObjectMapper mapper,
-            TelemetryClient telemetry)
+            ILogger<IndexModel> logger)
         {
             _liveShowDetails = liveShowDetails;
             _memoryCache = memoryCache;
             _appSettings = appSettings.Value;
             _env = env;
             _mapper = mapper;
-            _telemetry = telemetry;
+            _logger = logger;
         }
 
         [Display(Name = "Live Show Embed URL", Description = "URL for embedding the live show")]
@@ -146,18 +145,23 @@ namespace live.asp.net.Pages.Admin
             return nextTuesday.Date;
         }
 
+        private static EventId _showStarted = new EventId(0, "Show Started");
+        private static EventId _showEnded = new EventId(1, "Show Ended");
+
         private void TrackShowEvent(Input input, LiveShowDetails liveShowDetails)
         {
-            if (_telemetry.IsEnabled())
+            if (_logger.IsEnabled(LogLevel.Information))
             {
                 var showStarted = string.IsNullOrEmpty(liveShowDetails.LiveShowEmbedUrl) && !string.IsNullOrEmpty(input.LiveShowEmbedUrl);
                 var showEnded = !string.IsNullOrEmpty(liveShowDetails.LiveShowEmbedUrl) && string.IsNullOrEmpty(input.LiveShowEmbedUrl);
 
-                if (showStarted || showEnded)
+                if (showStarted)
                 {
-                    var showEvent = new EventTelemetry(showStarted ? "Show Started" : "Show Ended");
-                    showEvent.Properties.Add("Show Embed URL", showStarted ? input.LiveShowEmbedUrl : liveShowDetails.LiveShowEmbedUrl);
-                    _telemetry.TrackEvent(showEvent);
+                    _logger.LogInformation(_showStarted, "Show started streaming at {ShowEmbedUrl}", input.LiveShowEmbedUrl);
+                }
+                if (showEnded)
+                {
+                    _logger.LogInformation(_showEnded, "Show ended streaming at {ShowEmbedUrl}", liveShowDetails.LiveShowEmbedUrl);
                 }
             }
         }
